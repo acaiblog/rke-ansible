@@ -1,0 +1,32 @@
+---
+- name: Check if cert-manager namespace exists
+  k8s_info:
+    kind: Namespace
+    name: cert-manager
+  register: cert_manager_namespace
+  ignore_errors: yes  # Ignore errors if the namespace does not exist
+
+- name: Check if cert-manager deployment exists
+  k8s_info:
+    kind: Deployment
+    namespace: cert-manager  # Adjust if using a different namespace
+    name: cert-manager
+  register: cert_manager_deployment
+  ignore_errors: yes  # Ignore errors if the deployment does not exist
+
+- name: Determine if cert-manager is deployed
+  set_fact:
+    cert_manager_deployed: "{{ (cert_manager_namespace.resources|length > 0) and (cert_manager_deployment.resources|length > 0) }}"
+
+- name: Debug cert-manager deployment status
+  debug:
+    var: cert_manager_deployed
+
+- block:
+  - name: Install Cert Manager From Helm
+    shell: "helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version {{ cert_manager_version }}"
+
+  - name: Debug cert-manager release info
+    debug:
+      var: cert_manager_release
+  when: not cert_manager_deployed

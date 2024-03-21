@@ -1,0 +1,3 @@
+---
+# defaults file for roles/ha
+host_ip: "{{ hostvars[inventory_hostname]['ansible_' + hostvars[inventory_hostname]['api_interface']]['ipv4']['address'] }}"

@@ -1,0 +1,15 @@
+---
+- hosts:
+    k8s
+  roles:
+    - { role: common, tags: common }
+    - { role: rke, tags: rke }
+
+- hosts:
+    k8s-master
+  roles:
+    - { role: ha, tags: ha }
+- hosts:
+    k8s-master[0]
+  roles:
+    - { role: rancher, tags: rancher }

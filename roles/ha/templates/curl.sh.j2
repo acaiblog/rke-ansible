@@ -1,0 +1,8 @@
+#!/bin/bash
+res=`/usr/bin/curl -s -H "Authorization: Bearer {{ default_service_account_token }}" --insecure https://{{ host_ip }}:6443/healthz` >/dev/null
+echo $res
+if [ "$res" == "ok" ];then
+    exit 0
+else
+    exit 2
+fi

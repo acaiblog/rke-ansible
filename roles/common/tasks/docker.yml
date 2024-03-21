@@ -1,0 +1,17 @@
+---
+- name: install docker-ce 
+  yum:
+    name: "docker-ce-{{ docker_version }}"
+    state: present
+
+- name: create docker directory /etc/docker
+  file:
+    path: /etc/docker
+    state: directory
+
+- name: started docker service
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+

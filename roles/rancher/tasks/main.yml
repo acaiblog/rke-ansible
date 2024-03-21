@@ -1,0 +1,5 @@
+---
+# tasks file for roles/rancher
+- include: helm.yml
+- include: cert-manager.yml
+- include: rancher.yml

@@ -1,0 +1,15 @@
+[k8s-master]
+192.168.234.132 hostname=rke01
+
+[k8s-worker]
+192.168.234.130 hostname=rke02
+192.168.234.131 hostname=rke03
+
+[k8s:children]
+k8s-master
+k8s-worker
+
+[all:vars]
+ansible_ssh_user=root
+ansible_ssh_pass=1
+ansible_ssh_port=22

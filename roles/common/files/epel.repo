@@ -1,0 +1,7 @@
+[epel]
+name=Extra Packages for Enterprise Linux $releasever - $basearch
+enabled=1
+failovermethod=priority
+baseurl=http://mirrors.ustc.edu.cn/epel/$releasever/$basearch
+gpgcheck=0
+gpgkey=http://mirrors.ustc.edu.cn/epel/RPM-GPG-KEY-EPEL-$releasever

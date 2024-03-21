@@ -1,0 +1,119 @@
+---
+# tasks file for roles/rke
+- name: debug host ip
+  debug:
+    msg: "{{ host_ip }}"
+
+- name: debug hostname
+  debug:
+    msg: "{{ ansible_hostname }}"
+
+- name: create rke user
+  user:
+    name: "{{ rke_user }}"
+    shell: /bin/bash
+    group: docker
+
+- name: Create Directory .ssh
+  file:
+    path: "/home/{{ rke_user }}/.ssh"
+    mode: 0700
+    owner: apps
+    group: docker
+    state: directory
+
+- name: Copy SSH public key for root
+  copy:
+    src: "{{ item }}"
+    dest: "{{ ansible_user_dir }}/.ssh/{{ item }}"
+  with_items:
+    - authorized_keys
+    - id_rsa
+    - id_rsa.pub
+  delegate_to: "{{ groups['k8s-master'][0] }}"
+  run_once: true
+
+- name: Copy SSH public key for {{ rke_user }}
+  copy:
+    src: "{{ item }}"
+    dest: "/home/{{ rke_user }}/.ssh/{{ item }}"
+    group: docker
+  with_items:
+    - authorized_keys
+    - id_rsa
+    - id_rsa.pub
+
+- name: Check RKE is Exist
+  stat:
+    path: /usr/local/bin/rke
+  register: rke_status
+  delegate_to: "{{ groups['k8s-master'][0] }}"
+  run_once: true
+
+- name: Check Kubectl is Exist
+  stat:
+    path: /usr/local/bin/kubectl
+  register: kubectl_status
+
+- name: Debug RKE Status
+  debug:
+    msg: "{{ rke_status.stat.exists }}"
+
+- name: Debug Kubectl Status
+  debug:
+    msg: "{{ kubectl_status.stat.exists }}"
+
+- name: Download RKE binary
+  get_url:
+    url: "https://github.com/rancher/rke/releases/download/{{ rke_version }}/rke_linux-amd64"
+    dest: "/usr/local/bin/rke"
+    mode: "0777"
+    force: true
+  when: not rke_status.stat.exists
+  delegate_to: "{{ groups['k8s-master'][0] }}"
+  run_once: true
+
+- name: Download Kubectl binary
+  get_url:
+    url: "https://dl.k8s.io/release/v1.21.14/bin/linux/amd64/kubectl"
+    dest: "/usr/local/bin/kubectl"
+    mode: "0777"
+    force: true
+    validate_certs: no
+  when: not kubectl_status.stat.exists
+
+- name: Copy cluster.yml
+  template:
+    src: cluster.yml.j2
+    dest: /root/cluster.yml
+  delegate_to: "{{ groups['k8s-master'][0] }}"
+  run_once: true
+
+- name: Startup K8S
+  shell: rke up
+  delegate_to: "{{ groups['k8s-master'][0] }}"
+  run_once: true
+
+- name: Create Directory /root/.kube
+  file:
+    path: /root/.kube
+    state: directory
+
+- name: Fetch kube_config_cluster.yml to /root/.kube/config
+  fetch:
+    src: /root/kube_config_cluster.yml
+    dest: /root/.kube/config
+    flat: yes
+  delegate_to: "{{ groups['k8s-master'][0] }}"
+  run_once: true
+
+- name: Copy /root/.kube/config
+  copy:
+    src: /root/.kube/config
+    dest: /root/.kube/config
+
+- name: Set vip to .kube/config
+  lineinfile:
+    path: /root/.kube/config
+    regexp: '^server: "https://.*:6443"$'
+    line: 'server: "https://{{ keepalived_vip }}:6443"'

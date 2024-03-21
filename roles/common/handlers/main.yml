@@ -1,0 +1,17 @@
+---
+# handlers file for roles/init-os
+- name: restart docker service
+  systemd:
+    name: docker
+    state: restarted
+    enabled: yes
+
+- name: restart containerd service
+  systemd:
+    name: containerd
+    state: restarted
+    enabled: yes
+
+- name: Reboot server
+  reboot:
+    reboot_timeout: 300

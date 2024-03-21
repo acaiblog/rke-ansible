@@ -1,0 +1,64 @@
+---
+- name: Check Helm is Exist
+  stat:
+    path: /usr/local/bin/helm
+  register: helm_status
+- block:
+  - name: Download Helm binary
+    get_url:
+      url: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
+      dest: "/tmp/helm-{{ helm_version }}-linux-amd64.tar.gz"
+      mode: "0777"
+      force: true
+  #  when: not rke_status.stat.exists
+
+  - name: Unarchive Helm tar.gz file
+    unarchive:
+      src: "/tmp/helm-{{ helm_version }}-linux-amd64.tar.gz"
+      dest: /usr/local/bin
+      remote_src: yes
+
+  - name: Verify Helm installation
+    shell: helm version
+    register: helm_version_output
+    changed_when: false
+
+  - name: Display Helm version
+    debug:
+      var: helm_version_output.stdout
+  when: not helm_status.stat.exists
+
+- name: Ensure Rancher Helm repository is added
+  shell: "helm repo add {{ item.name }} {{ item.repo }}"
+  with_items:
+    - { name: "rancher-latest", repo: "https://releases.rancher.com/server-charts/latest" }
+    - { name: "jetstack", repo: "https://charts.jetstack.io" }
+
+- name: Update Helm Repo
+  shell: "helm repo update"
+
+- name: Create Namespace cattle-system For Rancher
+  k8s:
+    name: cattle-system
+    api_version: v1
+    kind: Namespace
+    state: present
+
+#- name: Download Cert Manager Crds
+#  get_url:
+#    url: "https://github.com/cert-manager/cert-manager/releases/download/{{ cert_manager_version }}/cert-manager.crds.yaml"
+#    dest: "/tmp/cert-manager.crds.yaml"
+#    mode: "0777"
+#    timeout: 30
+#    force: true
+#    validate_certs: no
+
+- name: Copy Cert Manager Crds Files
+  copy:
+    src: cert-manager.crds.yaml
+    dest: /tmp/cert-manager.crds.yaml
+
+- name: Create Cert-Manager Crds
+  k8s:
+    state: present
+    src: /tmp/cert-manager.crds.yaml

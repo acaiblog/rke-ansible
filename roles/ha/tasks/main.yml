@@ -1,0 +1,68 @@
+---
+# tasks file for roles/ha
+- name: Install Package
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - keepalived
+    - python2-pip
+    - python2-openshift
+
+- block:
+
+  - name: Get the default ServiceAccount
+    k8s_info:
+      api_version: v1
+      kind: ServiceAccount
+      namespace: default
+      name: default
+    register: service_account
+
+  - name: Extract the secret name from the ServiceAccount
+    set_fact:
+      secret_name: "{{ service_account.resources[0].secrets[0].name }}"
+
+  - name: Print the secret name
+    debug:
+      var: secret_name
+
+  - name: Query for the default service account secret
+    k8s_info:
+      api_version: v1
+      kind: Secret
+      name: "{{ secret_name }}"
+      namespace: default
+    register: secret_info
+
+  - name: Fail if no secret is found
+    fail:
+      msg: "No secret found for the default service account"
+    when: secret_info.resources | length == 0
+
+  - name: Decode the token from the secret
+    set_fact:
+      default_service_account_token: "{{ secret_info.resources[0].data.token | b64decode }}"
+
+  - name: Show the decoded token
+    debug:
+      var: default_service_account_token
+  delegate_to: "{{ groups['k8s-master'][0] }}"
+  run_once: true
+
+- name: Copy Keepalived Config File
+  template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+
+- name: Copy Keepalived Curl Script
+  template:
+    src: curl.sh.j2
+    dest: /etc/keepalived/curl.sh
+    mode: 0755
+
+- name: Startup Keepalived Service
+  systemd:
+    name: keepalived
+    state: started
+    enabled: true

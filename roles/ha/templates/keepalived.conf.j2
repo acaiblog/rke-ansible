@@ -1,0 +1,32 @@
+! Configuration File for keepalived
+
+global_defs {
+   router_id {{ keepalived_route_id }}
+}
+
+vrrp_script chk_kube_api {
+    script /etc/keepalived/curl.sh
+    interval 2  # 检查间隔
+    weight -2  # 如果检查失败，则降低的优先级值
+    fall 2     # 需要连续失败多少次才认为是失败
+    rise 1     # 需要连续成功多少次才认为是成功
+}
+
+vrrp_instance VI_1 {
+    state MASTER
+    interface {{ api_interface }}
+    virtual_router_id 51
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass your_password
+    }
+    virtual_ipaddress {
+        {{ keepalived_vip }}/24 dev {{ api_interface }}
+    }
+
+    track_script {
+        chk_kube_api
+    }
+}

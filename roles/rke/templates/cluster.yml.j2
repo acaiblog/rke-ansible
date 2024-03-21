@@ -1,0 +1,42 @@
+nodes:
+{% for host in groups['k8s-master'] %}
+  - address: "{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}" # 离线环境节点 IP
+    hostname_override: "{{ hostvars[host]['ansible_hostname'] }}"
+    user: "{{ rke_user }}"
+    role: ["controlplane", "etcd"]
+    ssh_key_path: /root/.ssh/id_rsa
+{% endfor %}
+{% for host in groups['k8s-worker'] %}
+  - address: "{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}" # 离线环境节点 IP
+    hostname_override: "{{ hostvars[host]['ansible_hostname'] }}"
+    user: "{{ rke_user }}"
+    role: ["worker"]
+    ssh_key_path: /root/.ssh/id_rsa
+{% endfor %}
+upgrade_strategy:
+  max_unavailable_worker: 50%
+  max_unavailable_controlplane: 1
+  drain: false
+ignore_docker_version: true
+kubernetes_version: "v1.21.14-rancher1-1"
+network:
+   plugin: calico
+services:
+    etcd:
+      snapshot: true
+      creation: 6h
+      retention: 24h
+    kube-api:
+      extra_args:
+        # Enable audit log to stdout
+        enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,NodeRestriction,Priority,TaintNodesByCondition,PersistentVolumeClaimResize,PodNodeSelector"
+#        enable-admission-plugins: "NamespaceLifecycle,PodNodeSelector"
+    kubelet:
+      extra_args:
+        cpu-manager-policy: "static"
+        reserved-cpus: 0-3
+
+authentication:
+  strategy: x509
+  sans:
+    - "172.22.150.250"

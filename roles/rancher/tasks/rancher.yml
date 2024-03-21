@@ -1,0 +1,49 @@
+---
+- name: Check if cattle-system namespace exists
+  k8s_info:
+    kind: Namespace
+    name: cattle-system
+  register: cattle_system_namespace
+  ignore_errors: yes  # Ignore errors if the namespace does not exist
+
+- name: Check if Rancher deployment exists
+  k8s_info:
+    kind: Deployment
+    namespace: cattle-system  # Adjust if using a different namespace
+    name: rancher
+  register: rancher_deployment
+  ignore_errors: yes  # Ignore errors if the deployment does not exist
+
+- name: Determine if rancher is deployed
+  set_fact:
+    rancher_deployed: "{{ (cattle_system_namespace.resources|length > 0) and (rancher_deployment.resources|length > 0) }}"
+
+- name: Debug Rancher deployment status
+  debug:
+    var: rancher_deployed
+
+- block:
+  - name: Install Rancher From Helm
+    shell: "helm install rancher rancher-latest/rancher --namespace cattle-system --set hostname={{ rancher_domain }} --set replicas=1 --set bootstrapPassword=admin --version {{ rancher_version }}"
+  when: not rancher_deployed
+
+- name: Get rancher deployment info
+  k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: cattle-system
+    name: rancher
+  register: rancher_deployment_info
+
+- name: Fail if rancher deployment is not available
+  fail:
+    msg: "Rancher deployment is not available"
+  when: rancher_deployment_info.resources[0].status.conditions | selectattr('type', 'equalto', 'Available') | map(attribute='status') | first != 'True'
+
+- name: Show rancher deployment rollout status
+  debug:
+    msg: "Rancher deployment is {{ 'available' if rancher_deployment_info.resources[0].status.conditions | selectattr('type', 'equalto', 'Available') | map(attribute='status') | first == 'True' else 'not available' }}"
+
+- name: Show Access Rancher Address
+  debug:
+    msg: "Access the ranger and add {{ keepalived_vip }} {{ rancher_domain }} to the hosts file of the local machine"
