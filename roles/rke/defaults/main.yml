@@ -1,3 +1,4 @@
 ---
 # defaults file for roles/rke
 host_ip: "{{ hostvars[inventory_hostname]['ansible_' + api_interface]['ipv4']['address'] }}"
+deploy_node_ip: "{{ groups['k8s-master'][0] }}"

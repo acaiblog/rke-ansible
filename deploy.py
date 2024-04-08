@@ -12,7 +12,7 @@ def args():
     return args
 
 def deploy():
-    os.system('/usr/local/bin/ansible-playbook  -i inventory/hosts -e "k8s_action=%s" site.yaml' %action)
+    os.system('ansible-playbook  -i inventory/hosts -e "k8s_action=%s" site.yaml' %action)
 
 if __name__ == "__main__":
     action = args()['action']

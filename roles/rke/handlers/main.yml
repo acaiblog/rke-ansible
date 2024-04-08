@@ -1,2 +1,4 @@
 ---
 # handlers file for roles/rke
+- name: update initramfs
+  command: dracut --force

@@ -1,7 +1,12 @@
 ---
 # tasks file for roles/init-os
-- include: os.yaml
+- include: check.yml
 
-- include: yum.yaml
+- include: os.yml
+
+- include: yum.yml
 
 - include: docker.yml
+
+- include: registry.yml
+  when: ansible_host == deploy_node_ip

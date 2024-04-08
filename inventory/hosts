@@ -1,9 +1,7 @@
 [k8s-master]
-192.168.234.132 hostname=rke01
+172.16.1.12 hostname=rke
 
 [k8s-worker]
-192.168.234.130 hostname=rke02
-192.168.234.131 hostname=rke03
 
 [k8s:children]
 k8s-master

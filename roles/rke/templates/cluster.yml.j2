@@ -1,4 +1,13 @@
 nodes:
+{% if master_on_worker %}
+{% for host in groups['k8s'] %}
+  - address: "{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}" # 离线环境节点 IP
+    hostname_override: "{{ hostvars[host]['ansible_hostname'] }}"
+    user: "{{ rke_user }}"
+    role: [ "controlplane", "etcd", "worker" ]
+    ssh_key_path: /root/.ssh/id_rsa
+{% endfor %}
+{% else %}
 {% for host in groups['k8s-master'] %}
   - address: "{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}" # 离线环境节点 IP
     hostname_override: "{{ hostvars[host]['ansible_hostname'] }}"
@@ -13,6 +22,11 @@ nodes:
     role: ["worker"]
     ssh_key_path: /root/.ssh/id_rsa
 {% endfor %}
+{% endif %}
+
+private_registries:
+  - url: "{{ deploy_node_ip }}:5000"
+    is_default: true
 upgrade_strategy:
   max_unavailable_worker: 50%
   max_unavailable_controlplane: 1
@@ -35,8 +49,11 @@ services:
       extra_args:
         cpu-manager-policy: "static"
         reserved-cpus: 0-3
+    kubeproxy:
+      extra_args:
+        proxy-mode: "{{ kube_proxy_mode }}"
 
 authentication:
   strategy: x509
   sans:
-    - "172.22.150.250"
+    - "{{ keepalived_vip }}"

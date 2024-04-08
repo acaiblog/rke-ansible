@@ -35,15 +35,29 @@
     name: rancher
   register: rancher_deployment_info
 
+- name: debug rancher deployment
+  debug:
+    msg: "{{ rancher_deployment_info }}"
+
 - name: Fail if rancher deployment is not available
   fail:
     msg: "Rancher deployment is not available"
-  when: rancher_deployment_info.resources[0].status.conditions | selectattr('type', 'equalto', 'Available') | map(attribute='status') | first != 'True'
+  when: rancher_deployment_info.resources[0].status.conditions | selectattr('type') | map(attribute='status') | first != 'True'
 
 - name: Show rancher deployment rollout status
   debug:
-    msg: "Rancher deployment is {{ 'available' if rancher_deployment_info.resources[0].status.conditions | selectattr('type', 'equalto', 'Available') | map(attribute='status') | first == 'True' else 'not available' }}"
+    msg: "Rancher deployment is {{ 'available' if rancher_deployment_info.resources[0].status.conditions | selectattr('type') | map(attribute='status') | first == 'True' else 'not available' }}"
 
 - name: Show Access Rancher Address
   debug:
     msg: "Access the ranger and add {{ keepalived_vip }} {{ rancher_domain }} to the hosts file of the local machine"
+
+- name: Check Rancher Ping is OK
+  uri:
+    url: "https://{{ rancher_domain }}/ping"
+    return_content: yes
+    validate_certs: no
+  register: rancher_state
+  retries: 5
+  until: rancher_state.content.find("pong") != -1
+  delay: 3

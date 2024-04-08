@@ -1,0 +1,18 @@
+---
+- name: Check CPU cores
+  assert:
+    that: ansible_facts['processor_vcpus'] >= 8
+    msg: "Node does not have enough CPU cores. Required: 8, Found: {{ ansible_facts['processor_vcpus'] }}"
+
+- name: Check memory size
+  assert:
+    that: ansible_facts['memtotal_mb'] >= 7805
+    msg: "Node does not have enough memory. Required: 8GB, Found: {{ ansible_facts['memtotal_mb'] }}MB"
+
+- name: Check the host is CentOS 7 and x86_64
+  assert:
+    that:
+      - ansible_distribution == 'CentOS'
+      - ansible_distribution_major_version == '7'
+      - ansible_architecture == 'x86_64'
+    fail_msg: "This host is not CentOS 7 and not x86_64 architecture!"

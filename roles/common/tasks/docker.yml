@@ -9,9 +9,14 @@
     path: /etc/docker
     state: directory
 
+- name: Copy Docker Daemon
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+
 - name: started docker service
   systemd:
     name: docker
-    state: started
+    state: restarted
     enabled: yes
 

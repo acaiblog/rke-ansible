@@ -15,8 +15,15 @@
   - name: Unarchive Helm tar.gz file
     unarchive:
       src: "/tmp/helm-{{ helm_version }}-linux-amd64.tar.gz"
-      dest: /usr/local/bin
+      dest: /usr/local/
       remote_src: yes
+
+  - name: Copy Helm to /usr/local/bin
+    copy:
+      src: /usr/local/linux-amd64/helm
+      dest: /usr/local/bin/helm
+      mode: 0777
+      remote_src: true
 
   - name: Verify Helm installation
     shell: helm version

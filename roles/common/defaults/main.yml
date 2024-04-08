@@ -11,8 +11,6 @@ install_pkg:
   - python-devel
   - chrony
   - wget
-
-chrony_server: "{{ deploy_node_ip }}"
 arch:
   x86_64:
     base: 'CentOS-Base.repo'

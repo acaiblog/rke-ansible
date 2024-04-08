@@ -1,12 +1,34 @@
 ---
 # tasks file for roles/rke
-- name: debug host ip
-  debug:
-    msg: "{{ host_ip }}"
+- name: Install ipvsadm
+  yum:
+    name: ipvsadm
+    state: present
+  when: kube_proxy_mode == 'ipvs'
 
-- name: debug hostname
-  debug:
-    msg: "{{ ansible_hostname }}"
+- name: Load ip_vs core module
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - ip_vs
+    - ip_vs_rr
+    - ip_vs_wrr
+    - ip_vs_sh
+
+- name: Copy ipvs module configuration to /etc/modules-load.d/
+  copy:
+    content: |  
+      ip_vs  
+      ip_vs_rr  
+      ip_vs_wrr  
+      ip_vs_sh
+    dest: /etc/modules-load.d/ipvs.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - update initramfs
 
 - name: create rke user
   user:
@@ -69,9 +91,17 @@
     dest: "/usr/local/bin/rke"
     mode: "0777"
     force: true
+  register: rke_download_result
+  until: rke_download_result.status_code == 200
+  retries: 5
+  delay: 3
   when: not rke_status.stat.exists
   delegate_to: "{{ groups['k8s-master'][0] }}"
   run_once: true
+
+- name: debug rke_download_result
+  debug:
+    msg: "{{ rke_download_result }}"
 
 - name: Download Kubectl binary
   get_url:
@@ -89,8 +119,56 @@
   delegate_to: "{{ groups['k8s-master'][0] }}"
   run_once: true
 
+- block:
+  - name: RKE Generating images
+    shell: "rke config --system-images --version {{ k8s_version }}|grep -v 'Generating images'|grep -v 'noiro'"
+    register: rke_image
+
+  - name: Add rancher/rke-tools:v0.1.88 to the output list
+    set_fact:
+      updated_rke_images: "{{ rke_image.stdout_lines + ['rancher/rke-tools:v0.1.88'] }}"
+
+#  - name: DownLoad RKE Image
+#    docker_image:
+#      name: rancher/rke-tools:v0.1.88
+#      source: pull
+#      state: present
+#
+#  - name: Build Tag From RKE Image
+#    docker_image:
+#      name: "{{ item }}"
+#      repository: "{{ deploy_node_ip }}:5000/{{ item }}"
+#      source: local
+#      push: yes
+#    with_items:
+#      - rancher/rke-tools:v0.1.88
+
+#  - name: Upload RKE Image
+#    docker_image:
+#      name: rancher/rke-tools:v0.1.88
+#      repository: "{{ deploy_node_ip }}:5000/rancher/rke-tools:v0.1.88"
+#      source: local
+#      push: yes
+
+  - name: Download RKE system image
+    docker_image:
+      name: "{{ item }}"
+      source: pull
+      state: present
+    with_items: "{{ updated_rke_images }}"
+
+  - name: Build Tag From RKE Image
+    docker_image:
+      name: "{{ item }}"
+      repository: "{{ deploy_node_ip }}:5000/{{ item }}"
+      source: local
+      push: yes
+    with_items: "{{ updated_rke_images }}"
+
+  when: ansible_host == deploy_node_ip
+
 - name: Startup K8S
-  shell: rke up
+  shell: rke up >> /root/rke_up.log 2>&1
   delegate_to: "{{ groups['k8s-master'][0] }}"
   run_once: true
 

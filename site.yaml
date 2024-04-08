@@ -9,6 +9,7 @@
     k8s-master
   roles:
     - { role: ha, tags: ha }
+
 - hosts:
     k8s-master[0]
   roles:

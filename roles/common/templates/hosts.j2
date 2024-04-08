@@ -3,3 +3,4 @@
 {% for host in groups['all'] %}
 {{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}	{{ hostvars[host]['ansible_hostname'] }}
 {% endfor %}
+{{ keepalived_vip }} {{ rancher_domain }}
