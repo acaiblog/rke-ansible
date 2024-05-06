@@ -63,5 +63,5 @@ rancher_version: 2.6.6
 执行部署脚本
 ```bash
 cd rke-ansible
-python deploy.py --action deploy
+python deploy.py
 ```
