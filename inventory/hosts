@@ -1,5 +1,5 @@
 [k8s-master]
-172.16.1.12 hostname=rke
+172.16.1.10 hostname=k8s
 
 [k8s-worker]
 

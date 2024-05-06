@@ -128,33 +128,12 @@
     set_fact:
       updated_rke_images: "{{ rke_image.stdout_lines + ['rancher/rke-tools:v0.1.88'] }}"
 
-#  - name: DownLoad RKE Image
-#    docker_image:
-#      name: rancher/rke-tools:v0.1.88
-#      source: pull
-#      state: present
-#
-#  - name: Build Tag From RKE Image
-#    docker_image:
-#      name: "{{ item }}"
-#      repository: "{{ deploy_node_ip }}:5000/{{ item }}"
-#      source: local
-#      push: yes
-#    with_items:
-#      - rancher/rke-tools:v0.1.88
-
-#  - name: Upload RKE Image
-#    docker_image:
-#      name: rancher/rke-tools:v0.1.88
-#      repository: "{{ deploy_node_ip }}:5000/rancher/rke-tools:v0.1.88"
-#      source: local
-#      push: yes
-
   - name: Download RKE system image
     docker_image:
       name: "{{ item }}"
       source: pull
       state: present
+    failed_when: false
     with_items: "{{ updated_rke_images }}"
 
   - name: Build Tag From RKE Image

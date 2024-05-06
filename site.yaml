@@ -10,7 +10,7 @@
   roles:
     - { role: ha, tags: ha }
 
-- hosts:
-    k8s-master[0]
-  roles:
-    - { role: rancher, tags: rancher }
+#- hosts:
+#    k8s-master[0]
+#  roles:
+#    - { role: rancher, tags: rancher }

@@ -57,3 +57,6 @@ authentication:
   strategy: x509
   sans:
     - "{{ keepalived_vip }}"
+    {% for host in groups['k8s-master'] %}
+    - "{{ hostvars[host]['ansible_' + hostvars[host]['api_interface']]['ipv4']['address'] }}"
+    {% endfor %}

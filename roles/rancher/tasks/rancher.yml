@@ -35,10 +35,6 @@
     name: rancher
   register: rancher_deployment_info
 
-- name: debug rancher deployment
-  debug:
-    msg: "{{ rancher_deployment_info }}"
-
 - name: Fail if rancher deployment is not available
   fail:
     msg: "Rancher deployment is not available"

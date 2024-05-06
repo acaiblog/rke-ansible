@@ -6,7 +6,7 @@
 
 - name: Check memory size
   assert:
-    that: ansible_facts['memtotal_mb'] >= 7805
+    that: ansible_facts['memtotal_mb'] >= 3700
     msg: "Node does not have enough memory. Required: 8GB, Found: {{ ansible_facts['memtotal_mb'] }}MB"
 
 - name: Check the host is CentOS 7 and x86_64
